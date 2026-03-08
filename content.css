@@ -166,3 +166,22 @@ mark.better-ctrlf-highlight.better-ctrlf-active {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
+
+.better-ctrlf-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--better-ctrlf-text);
+  border: 1px solid var(--better-ctrlf-border);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+.better-ctrlf-textarea:focus {
+  border-color: var(--better-ctrlf-accent);
+}

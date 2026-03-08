@@ -8,20 +8,19 @@
       this.currentIdx = 0;
       this.matches = [];
       this.searchDebounceTimeout = null;
-      
+
       this.config = {
         regex: false,
         matchCase: false,
         wholeWord: false,
       };
-      
+
       this.elements = {};
-      
+
       this.init();
     }
 
     init() {
-      // Global Keyboard Listener
       document.addEventListener('keydown', this.handleGlobalKeydown.bind(this));
     }
 
@@ -39,7 +38,15 @@
         <div class="better-ctrlf-divider"></div>
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-matchcase" title="Match Case (Alt+I)">Aa</button>
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-wholeword" title="Whole Word (Alt+W)">\\b</button>
-        <button class="better-ctrlf-btn" id="better-ctrlf-btn-regex" title="Use Regular Expression (Alt+R)">.*</button>
+        <div style="position: relative; display: flex; align-items: center;">
+            <button class="better-ctrlf-btn" id="better-ctrlf-btn-regex" title="Use Regular Expression (Alt+R)">.*</button>
+            <button class="better-ctrlf-btn" id="better-ctrlf-btn-autoregex" title="Auto-Generate Regex (✨)" style="margin-left: 2px;">✨</button>
+            <div id="better-ctrlf-autoregex-menu" class="better-ctrlf-dropdown" style="width: 200px; padding: 8px;">
+                <div style="font-size: 12px; margin-bottom: 6px; color: rgba(255, 255, 255, 0.8);">Paste words (one per line):</div>
+                <textarea id="better-ctrlf-autoregex-textarea" class="better-ctrlf-textarea" placeholder="cat&#10;cats&#10;dog" rows="6" spellcheck="false"></textarea>
+                <button class="better-ctrlf-btn active" id="better-ctrlf-btn-generate-regex" style="margin-top: 8px; width: 100%; justify-content: center; padding: 6px;">Generate & Search</button>
+            </div>
+        </div>
         <div class="better-ctrlf-divider"></div>
         <div style="position: relative; display: flex; align-items: center;">
             <button class="better-ctrlf-btn" id="better-ctrlf-btn-download" title="Download Export Options">
@@ -59,22 +66,25 @@
       `;
       document.body.appendChild(container);
 
-      // Cache elements
       this.elements = {
         container,
-        input: document.getElementById('better-ctrlf-input'),
-        inputWrapper: document.getElementById('better-ctrlf-input-wrapper'),
-        countSpan: document.getElementById('better-ctrlf-count'),
-        btnPrev: document.getElementById('better-ctrlf-btn-prev'),
-        btnNext: document.getElementById('better-ctrlf-btn-next'),
-        btnMatchCase: document.getElementById('better-ctrlf-btn-matchcase'),
-        btnWholeWord: document.getElementById('better-ctrlf-btn-wholeword'),
-        btnRegex: document.getElementById('better-ctrlf-btn-regex'),
-        btnDownload: document.getElementById('better-ctrlf-btn-download'),
-        downloadMenu: document.getElementById('better-ctrlf-download-menu'),
-        btnDownloadAll: document.getElementById('better-ctrlf-btn-download-all'),
-        btnDownloadUnique: document.getElementById('better-ctrlf-btn-download-unique'),
-        btnClose: document.getElementById('better-ctrlf-btn-close')
+        input: container.querySelector('#better-ctrlf-input'),
+        inputWrapper: container.querySelector('#better-ctrlf-input-wrapper'),
+        countSpan: container.querySelector('#better-ctrlf-count'),
+        btnPrev: container.querySelector('#better-ctrlf-btn-prev'),
+        btnNext: container.querySelector('#better-ctrlf-btn-next'),
+        btnMatchCase: container.querySelector('#better-ctrlf-btn-matchcase'),
+        btnWholeWord: container.querySelector('#better-ctrlf-btn-wholeword'),
+        btnRegex: container.querySelector('#better-ctrlf-btn-regex'),
+        btnAutoRegex: container.querySelector('#better-ctrlf-btn-autoregex'),
+        autoRegexMenu: container.querySelector('#better-ctrlf-autoregex-menu'),
+        autoRegexTextarea: container.querySelector('#better-ctrlf-autoregex-textarea'),
+        btnGenerateRegex: container.querySelector('#better-ctrlf-btn-generate-regex'),
+        btnDownload: container.querySelector('#better-ctrlf-btn-download'),
+        downloadMenu: container.querySelector('#better-ctrlf-download-menu'),
+        btnDownloadAll: container.querySelector('#better-ctrlf-btn-download-all'),
+        btnDownloadUnique: container.querySelector('#better-ctrlf-btn-download-unique'),
+        btnClose: container.querySelector('#better-ctrlf-btn-close')
       };
 
       this.bindEvents();
@@ -97,24 +107,60 @@
 
       this.elements.btnPrev.addEventListener('click', () => this.navigate(-1));
       this.elements.btnNext.addEventListener('click', () => this.navigate(1));
-      
-      // Download Dropdown Toggle
-      this.elements.btnDownload.addEventListener('click', (e) => {
+
+      this.elements.btnAutoRegex.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.elements.downloadMenu) this.elements.downloadMenu.classList.remove('show');
+        this.elements.autoRegexMenu.classList.toggle('show');
+        if (this.elements.autoRegexMenu.classList.contains('show')) {
+          this.elements.autoRegexTextarea.focus();
+        }
+      });
+
+      this.elements.autoRegexTextarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.elements.autoRegexMenu.classList.remove('show');
+          this.elements.input.focus();
+        } else {
           e.stopPropagation();
-          this.elements.downloadMenu.classList.toggle('show');
+        }
       });
 
-      // Close dropdown when clicking outside
-      document.addEventListener('click', () => {
-          if (this.elements.downloadMenu) {
-              this.elements.downloadMenu.classList.remove('show');
+      this.elements.btnGenerateRegex.addEventListener('click', () => {
+        const text = this.elements.autoRegexTextarea.value;
+        const words = text.split(/\r?\n/).map(w => w.trim()).filter(w => w.length > 0);
+        if (words.length > 0) {
+          const regexStr = this.generateOptimizedRegex(words);
+          this.elements.input.value = regexStr;
+
+          if (!this.config.regex) {
+            this.config.regex = true;
+            this.elements.btnRegex.classList.add('active');
           }
+
+          this.elements.autoRegexMenu.classList.remove('show');
+          this.performSearch(regexStr);
+          this.elements.input.focus();
+        }
       });
 
-      // Download Actions
+      this.elements.btnDownload.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.elements.autoRegexMenu) this.elements.autoRegexMenu.classList.remove('show');
+        this.elements.downloadMenu.classList.toggle('show');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (this.elements.downloadMenu && !this.elements.btnDownload.contains(e.target) && !this.elements.downloadMenu.contains(e.target)) {
+          this.elements.downloadMenu.classList.remove('show');
+        }
+        if (this.elements.autoRegexMenu && !this.elements.btnAutoRegex.contains(e.target) && !this.elements.autoRegexMenu.contains(e.target)) {
+          this.elements.autoRegexMenu.classList.remove('show');
+        }
+      });
+
       this.elements.btnDownloadAll.addEventListener('click', () => this.downloadMatches(false));
       this.elements.btnDownloadUnique.addEventListener('click', () => this.downloadMatches(true));
-      
       this.elements.btnClose.addEventListener('click', () => this.hideUI());
 
       this.setupToggleBtn(this.elements.btnMatchCase, 'matchCase');
@@ -125,22 +171,16 @@
     setupToggleBtn(btn, configKey) {
       btn.addEventListener('click', () => this.toggleConfig(configKey, btn));
     }
-    
+
     toggleConfig(configKey, btnElement) {
-        this.config[configKey] = !this.config[configKey];
-        if (btnElement) {
-            btnElement.classList.toggle('active', this.config[configKey]);
-        }
-        this.performSearch(this.elements.input.value);
-        if (document.activeElement !== this.elements.input) {
-            this.elements.input.focus();
-        }
+      this.config[configKey] = !this.config[configKey];
+      if (btnElement) btnElement.classList.toggle('active', this.config[configKey]);
+      this.performSearch(this.elements.input.value);
+      if (document.activeElement !== this.elements.input) this.elements.input.focus();
     }
 
     showUI() {
-      if (!this.elements.container) {
-        this.createUI();
-      }
+      if (!this.elements.container) this.createUI();
       this.elements.container.classList.add('visible');
       this.elements.input.focus();
       this.elements.input.select();
@@ -156,15 +196,13 @@
     }
 
     clearHighlights() {
-      const marks = document.querySelectorAll('mark.better-ctrlf-highlight');
-      marks.forEach(mark => {
+      document.querySelectorAll('mark.better-ctrlf-highlight').forEach(mark => {
         const parent = mark.parentNode;
         if (parent) {
-           parent.replaceChild(document.createTextNode(mark.textContent), mark);
-           parent.normalize();
+          parent.replaceChild(document.createTextNode(mark.textContent), mark);
+          parent.normalize();
         }
       });
-      
       this.matches = [];
       this.searchCount = 0;
       this.currentIdx = 0;
@@ -172,32 +210,230 @@
     }
 
     downloadMatches(uniqueOnly) {
-      if (this.searchCount === 0 || !this.matches.length) return;
-      
-      let matchTexts = this.matches.map(mark => mark.textContent);
-      
+      if (!this.matches.length) return;
+      let matchTexts = this.matches.map(m => m.textContent);
       if (uniqueOnly) {
-          // Trim and filter empty strings, then deduplicate
-          matchTexts = matchTexts.map(t => t.trim()).filter(t => t.length > 0);
-          matchTexts = [...new Set(matchTexts)];
+        matchTexts = [...new Set(matchTexts.map(t => t.trim()).filter(t => t.length > 0))];
       }
-
-      const fileContent = matchTexts.join('\n');
-      
-      const blob = new Blob([fileContent], { type: 'text/plain' });
+      const blob = new Blob([matchTexts.join('\n')], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
       a.href = url;
       a.download = `better-ctrlf-matches-${this.elements.input.value}.txt`;
       a.style.display = 'none';
-      
       document.body.appendChild(a);
       a.click();
-      
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
+
+    // ─── Regex Generation ────────────────────────────────────────────────────
+
+    escapeRegex(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    escapeForClass(char) {
+      return /[\]\\\-\^]/.test(char) ? '\\' + char : char;
+    }
+
+    generateOptimizedRegex(words) {
+      if (words.length === 0) return '';
+      if (words.length === 1) return this.escapeRegex(words[0]);
+
+      const structural = this.detectStructuralPattern(words);
+      if (structural) return structural;
+
+      const trie = this.buildTrieRegex(words);
+      const simple = this.buildSimpleAlternation(words);
+      return trie.length <= simple.length ? trie : simple;
+    }
+
+    buildSimpleAlternation(words) {
+      const escaped = words.map(w => this.escapeRegex(w));
+      return escaped.length === 1 ? escaped[0] : '(?:' + escaped.join('|') + ')';
+    }
+
+    longestCommonPrefix(words) {
+      if (!words.length) return '';
+      let prefix = words[0];
+      for (let i = 1; i < words.length; i++) {
+        while (!words[i].startsWith(prefix)) {
+          prefix = prefix.slice(0, -1);
+          if (!prefix) return '';
+        }
+      }
+      return prefix;
+    }
+
+    longestCommonSuffix(words) {
+      const reversed = words.map(w => [...w].reverse().join(''));
+      return [...this.longestCommonPrefix(reversed)].reverse().join('');
+    }
+
+    detectStructuralPattern(words) {
+      const prefix = this.longestCommonPrefix(words);
+      const suffix = this.longestCommonSuffix(words);
+
+      const safeSlice = (w) => {
+        const end = w.length - suffix.length;
+        return end > prefix.length ? w.slice(prefix.length, end) : null;
+      };
+
+      // Prefix + suffix wrap
+      if (prefix.length + suffix.length >= 2) {
+        const cores = words.map(safeSlice);
+        if (cores.every(c => c !== null && c.length > 0)) {
+          const corePattern = this.analyzeCores(cores);
+          if (corePattern) {
+            return this.escapeRegex(prefix) + corePattern + this.escapeRegex(suffix);
+          }
+          if (prefix.length + suffix.length >= 3) {
+            return this.escapeRegex(prefix) + this.buildSimpleAlternation(cores) + this.escapeRegex(suffix);
+          }
+        }
+      }
+
+      // Prefix only
+      if (prefix.length >= 2) {
+        const cores = words.map(w => w.slice(prefix.length)).filter(c => c.length > 0);
+        if (cores.length === words.length) {
+          const inner = this.analyzeCores(cores) || this.generateOptimizedRegex(cores);
+          return this.escapeRegex(prefix) + inner;
+        }
+      }
+
+      // Suffix only
+      if (suffix.length >= 2) {
+        const cores = words.map(w => w.slice(0, w.length - suffix.length)).filter(c => c.length > 0);
+        if (cores.length === words.length) {
+          const inner = this.analyzeCores(cores) || this.generateOptimizedRegex(cores);
+          return inner + this.escapeRegex(suffix);
+        }
+      }
+
+      return null;
+    }
+
+    analyzeCores(cores) {
+      // All single characters → char class
+      if (cores.every(c => c.length === 1)) {
+        return this.buildCharClass(cores);
+      }
+
+      // All digits
+      if (cores.every(c => /^\d+$/.test(c))) {
+        return cores.every(c => c.length === 1) ? '\\d' : '\\d+';
+      }
+
+      // All word chars (letters, digits, underscores) — generalize to \w+
+      if (cores.every(c => /^\w+$/.test(c))) {
+        if (cores.length >= 2) return '\\w+';
+      }
+
+      // All lowercase alpha
+      if (cores.every(c => /^[a-z]+$/.test(c))) {
+        if (cores.length >= 3) return '[a-z]+';
+      }
+
+      // All uppercase alpha
+      if (cores.every(c => /^[A-Z]+$/.test(c))) {
+        if (cores.length >= 3) return '[A-Z]+';
+      }
+
+      // All non-whitespace (generic fallback for complex cores)
+      if (cores.every(c => /^\S+$/.test(c)) && cores.length >= 4) {
+        return '\\S+';
+      }
+
+      return null;
+    }
+
+    buildCharClass(chars) {
+      if (chars.length === 1) return this.escapeRegex(chars[0]);
+
+      const codes = [...new Set(chars.map(c => c.charCodeAt(0)))].sort((a, b) => a - b);
+      const rangeParts = [];
+      let i = 0;
+
+      while (i < codes.length) {
+        let j = i;
+        while (j + 1 < codes.length && codes[j + 1] === codes[j] + 1) j++;
+        const span = j - i;
+        const from = String.fromCharCode(codes[i]);
+        const to = String.fromCharCode(codes[j]);
+        if (span >= 2) {
+          rangeParts.push(this.escapeForClass(from) + '-' + this.escapeForClass(to));
+        } else if (span === 1) {
+          rangeParts.push(this.escapeForClass(from), this.escapeForClass(to));
+        } else {
+          rangeParts.push(this.escapeForClass(from));
+        }
+        i = j + 1;
+      }
+
+      return '[' + rangeParts.join('') + ']';
+    }
+
+    buildTrieRegex(words) {
+      // Build trie
+      const trie = {};
+      for (const word of words) {
+        let node = trie;
+        for (const char of word) {
+          if (!node[char]) node[char] = {};
+          node = node[char];
+        }
+        node[''] = true;
+      }
+      return this.trieNodeToRegex(trie);
+    }
+
+    trieNodeToRegex(node) {
+      const isEnd = node[''] === true;
+      const childKeys = Object.keys(node).filter(k => k !== '');
+
+      if (childKeys.length === 0) return '';
+
+      const parts = childKeys.map(char => this.escapeRegex(char) + this.trieNodeToRegex(node[char]));
+
+      let result;
+      if (parts.length === 1) {
+        result = parts[0];
+      } else {
+        const singleChars = [];
+        const multiParts = [];
+
+        for (const p of parts) {
+          const isSingle = p.length === 1 || (p.length === 2 && p[0] === '\\');
+          if (isSingle) {
+            singleChars.push(p.length === 2 ? p[1] : p[0]);
+          } else {
+            multiParts.push(p);
+          }
+        }
+
+        const alternatives = [];
+        if (singleChars.length > 1) alternatives.push(this.buildCharClass(singleChars));
+        else if (singleChars.length === 1) alternatives.push(this.escapeRegex(singleChars[0]));
+        alternatives.push(...multiParts);
+
+        result = alternatives.length === 1
+          ? alternatives[0]
+          : '(?:' + alternatives.join('|') + ')';
+      }
+
+      if (isEnd) {
+        const isSimple = result.length === 1 ||
+          (result.length === 2 && result[0] === '\\') ||
+          (result.startsWith('[') && result.endsWith(']'));
+        result = isSimple ? result + '?' : '(?:' + result + ')?';
+      }
+
+      return result;
+    }
+
+    // ─── Search & Highlight ───────────────────────────────────────────────────
 
     performSearch(query) {
       this.clearHighlights();
@@ -206,16 +442,10 @@
       let regex;
       try {
         let pattern = query;
-        if (!this.config.regex) {
-          pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-        
-        if (this.config.wholeWord) {
-          pattern = `\\b${pattern}\\b`;
-        }
-
-        const flags = this.config.matchCase ? 'g' : 'gi';
-        regex = new RegExp(pattern, flags);
+        if (!this.config.regex) pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (this.config.wholeWord) pattern = `\\b${pattern}\\b`;
+        if (!pattern) return;
+        regex = new RegExp(pattern, this.config.matchCase ? 'g' : 'gi');
       } catch (e) {
         this.updateCountUI(true);
         return;
@@ -228,119 +458,76 @@
           acceptNode: (node) => {
             const parent = node.parentElement;
             if (!parent) return NodeFilter.FILTER_REJECT;
-            const tagName = parent.tagName.toLowerCase();
-            
-            if (['script', 'style', 'noscript'].includes(tagName)) {
-              return NodeFilter.FILTER_REJECT;
-            }
-            
-            if (parent.closest('#better-ctrlf-container')) {
-               return NodeFilter.FILTER_REJECT;
-            }
-
+            const tag = parent.tagName.toLowerCase();
+            if (['script', 'style', 'noscript'].includes(tag)) return NodeFilter.FILTER_REJECT;
+            if (parent.closest('#better-ctrlf-container')) return NodeFilter.FILTER_REJECT;
             const style = window.getComputedStyle(parent);
-            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-              return NodeFilter.FILTER_REJECT;
-            }
-
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return NodeFilter.FILTER_REJECT;
             const testRegex = new RegExp(regex.source, regex.flags.replace('g', ''));
-            if (testRegex.test(node.nodeValue)) {
-                return NodeFilter.FILTER_ACCEPT;
-            }
-            
-            return NodeFilter.FILTER_REJECT;
+            return testRegex.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
           }
         }
       );
 
-      const nodesToProcess = [];
+      const nodes = [];
       let node;
-      while ((node = walker.nextNode())) {
-        nodesToProcess.push(node);
-      }
+      while ((node = walker.nextNode())) nodes.push(node);
 
-      if (nodesToProcess.length === 0) {
-          this.updateCountUI();
-          return;
-      }
-
-      for (const node of nodesToProcess) {
-        this.highlightNode(node, regex);
-      }
+      for (const n of nodes) this.highlightNode(n, regex);
 
       this.matches = Array.from(document.querySelectorAll('mark.better-ctrlf-highlight'));
       this.searchCount = this.matches.length;
       this.currentIdx = this.searchCount > 0 ? 1 : 0;
-      
-      if (this.searchCount > 0) {
-        this.navigate(0);
-      } else {
-        this.updateCountUI();
-      }
+
+      if (this.searchCount > 0) this.navigate(0);
+      else this.updateCountUI();
     }
 
     highlightNode(node, regex) {
-        regex.lastIndex = 0;
-        
-        const text = node.nodeValue;
-        const match = regex.exec(text);
-        
-        if (!match || match[0].length === 0) return;
-        
-        const matchIndex = match.index;
-        const matchText = match[0];
-        const parent = node.parentNode;
-        
-        const matchNode = node.splitText(matchIndex);
-        matchNode.splitText(matchText.length);
-        
-        const mark = document.createElement('mark');
-        mark.className = 'better-ctrlf-highlight';
-        mark.textContent = matchText;
-        
-        parent.replaceChild(mark, matchNode);
-        
-        const nextTextNode = mark.nextSibling;
-        if (nextTextNode && nextTextNode.nodeType === Node.TEXT_NODE) {
-            this.highlightNode(nextTextNode, regex);
-        }
+      regex.lastIndex = 0;
+      const text = node.nodeValue;
+      const match = regex.exec(text);
+      if (!match || match[0].length === 0) return;
+
+      const parent = node.parentNode;
+      const matchNode = node.splitText(match.index);
+      matchNode.splitText(match[0].length);
+
+      const mark = document.createElement('mark');
+      mark.className = 'better-ctrlf-highlight';
+      mark.textContent = match[0];
+      parent.replaceChild(mark, matchNode);
+
+      const next = mark.nextSibling;
+      if (next && next.nodeType === Node.TEXT_NODE) this.highlightNode(next, regex);
     }
 
     navigate(dir) {
       if (this.searchCount === 0) return;
-
-      if (this.matches.length > 0) {
-          this.matches.forEach(m => m.classList.remove('better-ctrlf-active'));
-      }
-
+      this.matches.forEach(m => m.classList.remove('better-ctrlf-active'));
       this.currentIdx += dir;
       if (this.currentIdx > this.searchCount) this.currentIdx = 1;
       if (this.currentIdx < 1) this.currentIdx = this.searchCount;
-
-      const activeElement = this.matches[this.currentIdx - 1];
-      if (activeElement) {
-          activeElement.classList.add('better-ctrlf-active');
-          activeElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      const active = this.matches[this.currentIdx - 1];
+      if (active) {
+        active.classList.add('better-ctrlf-active');
+        active.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
       }
-
       this.updateCountUI();
     }
 
     updateCountUI(isError = false) {
       if (!this.elements.countSpan) return;
-      
       const { input, inputWrapper, countSpan } = this.elements;
-
       if (isError) {
-          countSpan.textContent = 'Err';
-          countSpan.style.color = '#ff4d4d';
-          inputWrapper.style.borderColor = '#ff4d4d';
+        countSpan.textContent = 'Err';
+        countSpan.style.color = '#ff4d4d';
+        inputWrapper.style.borderColor = '#ff4d4d';
       } else {
-          countSpan.textContent = `${this.searchCount > 0 ? this.currentIdx : 0}/${this.searchCount}`;
-          
-          const hasNoMatches = this.searchCount === 0 && input.value;
-          countSpan.style.color = hasNoMatches ? '#ff4d4d' : 'rgba(255, 255, 255, 0.6)';
-          inputWrapper.style.borderColor = hasNoMatches ? '#ff4d4d' : 'var(--better-ctrlf-border)';
+        countSpan.textContent = `${this.searchCount > 0 ? this.currentIdx : 0}/${this.searchCount}`;
+        const noMatch = this.searchCount === 0 && input.value;
+        countSpan.style.color = noMatch ? '#ff4d4d' : 'rgba(255, 255, 255, 0.6)';
+        inputWrapper.style.borderColor = noMatch ? '#ff4d4d' : 'var(--better-ctrlf-border)';
       }
     }
 
@@ -354,28 +541,16 @@
           this.showUI();
         }
       } else if (e.key === 'Escape' && this.isVisible) {
-          this.hideUI();
+        this.hideUI();
       } else if (this.isVisible && e.altKey) {
-          let toggled = false;
-          
-          if (e.code === 'KeyW') {
-              this.toggleConfig('wholeWord', this.elements.btnWholeWord);
-              toggled = true;
-          } else if (e.code === 'KeyR') {
-              this.toggleConfig('regex', this.elements.btnRegex);
-              toggled = true;
-          } else if (e.code === 'KeyI') {
-              this.toggleConfig('matchCase', this.elements.btnMatchCase);
-              toggled = true;
-          }
-          
-          if (toggled) {
-              e.preventDefault();
-          }
+        let toggled = false;
+        if (e.code === 'KeyW') { this.toggleConfig('wholeWord', this.elements.btnWholeWord); toggled = true; }
+        else if (e.code === 'KeyR') { this.toggleConfig('regex', this.elements.btnRegex); toggled = true; }
+        else if (e.code === 'KeyI') { this.toggleConfig('matchCase', this.elements.btnMatchCase); toggled = true; }
+        if (toggled) e.preventDefault();
       }
     }
   }
 
-  // Initialize
   new BetterCtrlF();
 })();
