@@ -1,11 +1,11 @@
 <!-- Replace 'logo.png' below with the actual filename of your saved logo image -->
 <div align="center">
-  <img src="./better-ctrl-f.png" alt="BetterCTRLF Logo" width="250"/>
+  <img src="./better-ctrl-f.png" alt="better-ctrl-f Logo" width="250"/>
 </div>
 
-### BETTERCTRLF
+### better-ctrl-f
 
-BetterCTRLF is a tool that improves the CTRL+F experience in your browser.
+better-ctrl-f is a tool that improves the CTRL+F experience in your browser.
 
 ## Features
 
@@ -14,6 +14,6 @@ BetterCTRLF is a tool that improves the CTRL+F experience in your browser.
 * **Match Case (Aa):** Toggle case sensitivity using the `Aa` button or `Alt+I`.
 * **Whole Word (\b):** Match exactly bounded words using the `\b` button or `Alt+W`.
 * **Regex Mode (.*):** Unleash the power of regular expressions for advanced searching via the `.*` button or `Alt+R`.
-* **Auto-Regex (✨):** Provide a list of words, and BetterCTRLF will build an optimized, grouped regular expression out of them using a Trie-based string reduction algorithm (similar to `grex`).
+* **Auto-Regex (✨):** Provide a list of words, and better-ctrl-f will build an optimized, grouped regular expression out of them using a Trie-based string reduction algorithm (similar to `grex`).
 * **Keyboard Navigation:** Press `Enter` and `Shift+Enter` to seamlessly slide to the next and previous occurrences.
 * **Match Export:** Found what you're looking for? Click the download button (⭳) to easily export all the matching texts. Choose between exporting *every single occurrence* exactly as they appear in the file, or only exporting *unique matches* to skip duplicates!
