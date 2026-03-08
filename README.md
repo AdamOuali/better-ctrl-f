@@ -7,6 +7,10 @@
 
 better-ctrl-f is a tool that improves the CTRL+F experience in your browser.
 
+## Demo
+
+https://github.com/user-attachments/assets/0b6c35f4-d9b6-4ab4-9e24-329c14d0548c
+
 ## Features
 
 * **Subtle & Modern UI:** A premium overlay that appears when you fire `Cmd+F` or `Ctrl+F`, replacing the default browser search.
