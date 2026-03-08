@@ -41,13 +41,19 @@
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-wholeword" title="Whole Word (Alt+W)">\\b</button>
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-regex" title="Use Regular Expression (Alt+R)">.*</button>
         <div class="better-ctrlf-divider"></div>
-        <button class="better-ctrlf-btn" id="better-ctrlf-btn-download" title="Download Matches">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-        </button>
+        <div style="position: relative; display: flex; align-items: center;">
+            <button class="better-ctrlf-btn" id="better-ctrlf-btn-download" title="Download Export Options">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            </button>
+            <div id="better-ctrlf-download-menu" class="better-ctrlf-dropdown">
+                <button class="better-ctrlf-dropdown-item" id="better-ctrlf-btn-download-all">Export All Occurrences</button>
+                <button class="better-ctrlf-dropdown-item" id="better-ctrlf-btn-download-unique">Export Unique Only</button>
+            </div>
+        </div>
         <div class="better-ctrlf-divider"></div>
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-close" title="Close (Esc)">✕</button>
       `;
@@ -65,6 +71,9 @@
         btnWholeWord: document.getElementById('better-ctrlf-btn-wholeword'),
         btnRegex: document.getElementById('better-ctrlf-btn-regex'),
         btnDownload: document.getElementById('better-ctrlf-btn-download'),
+        downloadMenu: document.getElementById('better-ctrlf-download-menu'),
+        btnDownloadAll: document.getElementById('better-ctrlf-btn-download-all'),
+        btnDownloadUnique: document.getElementById('better-ctrlf-btn-download-unique'),
         btnClose: document.getElementById('better-ctrlf-btn-close')
       };
 
@@ -88,7 +97,24 @@
 
       this.elements.btnPrev.addEventListener('click', () => this.navigate(-1));
       this.elements.btnNext.addEventListener('click', () => this.navigate(1));
-      this.elements.btnDownload.addEventListener('click', () => this.downloadMatches());
+      
+      // Download Dropdown Toggle
+      this.elements.btnDownload.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.elements.downloadMenu.classList.toggle('show');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+          if (this.elements.downloadMenu) {
+              this.elements.downloadMenu.classList.remove('show');
+          }
+      });
+
+      // Download Actions
+      this.elements.btnDownloadAll.addEventListener('click', () => this.downloadMatches(false));
+      this.elements.btnDownloadUnique.addEventListener('click', () => this.downloadMatches(true));
+      
       this.elements.btnClose.addEventListener('click', () => this.hideUI());
 
       this.setupToggleBtn(this.elements.btnMatchCase, 'matchCase');
@@ -145,12 +171,18 @@
       this.updateCountUI();
     }
 
-    downloadMatches() {
+    downloadMatches(uniqueOnly) {
       if (this.searchCount === 0 || !this.matches.length) return;
       
-      const matchTexts = this.matches.map(mark => mark.textContent);
-      const uniqueMatches = [...new Set(matchTexts)];
-      const fileContent = uniqueMatches.join('\n');
+      let matchTexts = this.matches.map(mark => mark.textContent);
+      
+      if (uniqueOnly) {
+          // Trim and filter empty strings, then deduplicate
+          matchTexts = matchTexts.map(t => t.trim()).filter(t => t.length > 0);
+          matchTexts = [...new Set(matchTexts)];
+      }
+
+      const fileContent = matchTexts.join('\n');
       
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);

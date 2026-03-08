@@ -15,4 +15,4 @@ BetterCTRLF is a tool that improves the CTRL+F experience in your browser.
 * **Whole Word (\\b):** Match exactly bounded words using the `\b` button or `Alt+W`.
 * **Regex Mode (.*):** Unleash the power of regular expressions for advanced searching via the `.*` button or `Alt+R`.
 * **Keyboard Navigation:** Press `Enter` and `Shift+Enter` to seamlessly slide to the next and previous occurrences.
-* **Match Export:** Found what you're looking for? Click the download button (⭳) to easily export all the matching texts from the webpage into a `.txt` file.
+* **Match Export:** Found what you're looking for? Click the download button (⭳) to easily export all the matching texts. Choose between exporting *every single occurrence* exactly as they appear in the file, or only exporting *unique matches* to skip duplicates!
