@@ -1,3 +1,8 @@
+<!-- Replace 'logo.png' below with the actual filename of your saved logo image -->
+<div align="center">
+  <img src="./better-ctrl-f.png" alt="BetterCTRLF Logo" width="250"/>
+</div>
+
 ### BETTERCTRLF
 
 BetterCTRLF is a tool that improves the CTRL+F experience in your browser.
