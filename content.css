@@ -1,0 +1,118 @@
+/* Basic styles for the BetterCTRLF search bar overlay */
+
+:root {
+  --better-ctrlf-bg: rgba(20, 20, 20, 0.85);
+  --better-ctrlf-border: rgba(255, 255, 255, 0.1);
+  --better-ctrlf-text: #fff;
+  --better-ctrlf-accent: #007aff;
+  --better-ctrlf-highlight-bg: #ffeb3b;
+  --better-ctrlf-highlight-text: #000;
+  --better-ctrlf-active-bg: #ff9800;
+  --better-ctrlf-active-text: #000;
+}
+
+#better-ctrlf-container {
+  display: flex;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: var(--better-ctrlf-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--better-ctrlf-border);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 2147483647; /* MAX INT to ensure topmost */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  align-items: center;
+  gap: 8px;
+  color: var(--better-ctrlf-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+#better-ctrlf-container.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#better-ctrlf-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--better-ctrlf-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+#better-ctrlf-input {
+  background: transparent;
+  border: none;
+  color: var(--better-ctrlf-text);
+  outline: none;
+  font-size: 14px;
+  width: 150px;
+}
+
+#better-ctrlf-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.better-ctrlf-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.better-ctrlf-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.better-ctrlf-btn.active {
+  background: var(--better-ctrlf-accent);
+  color: #fff;
+}
+
+#better-ctrlf-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 40px;
+  text-align: center;
+}
+
+.better-ctrlf-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--better-ctrlf-border);
+}
+
+/* Document Highlighting */
+mark.better-ctrlf-highlight {
+  background-color: var(--better-ctrlf-highlight-bg) !important;
+  color: var(--better-ctrlf-highlight-text) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+
+mark.better-ctrlf-highlight.better-ctrlf-active {
+  background-color: var(--better-ctrlf-active-bg) !important;
+  color: var(--better-ctrlf-active-text) !important;
+  transform: scale(1.05) !important; /* Slight pop */
+  display: inline-block; /* Required for transform */
+  z-index: 10;
+  position: relative;
+}
