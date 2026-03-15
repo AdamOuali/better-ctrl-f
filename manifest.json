@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "better-ctrl-f",
-  "version": "1.2",
+  "version": "1.3",
   "description": "better-ctrl-f is a tool that improves the CTRL+F experience in your browser. Supports regex, case-insensitivity, and whole-word matching.",
 
   "permissions": [
