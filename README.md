@@ -1,4 +1,3 @@
-<!-- Replace 'logo.png' below with the actual filename of your saved logo image -->
 <div align="center">
   <img src="./better-ctrl-f.png" alt="better-ctrl-f Logo" width="250"/>
 </div>
