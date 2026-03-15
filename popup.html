@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Better-CTRL-F Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h2>Better-CTRL-F</h2>
+    <p>Settings</p>
+  </div>
+  
+  <div class="settings-group">
+    <div class="setting-item">
+      <label for="theme-select">Theme</label>
+      <select id="theme-select">
+        <option value="dark">Dark Mode</option>
+        <option value="light">Light Mode</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label for="neon-toggle">Enable Neon Effect</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="neon-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
