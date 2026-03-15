@@ -435,6 +435,43 @@
 
     // ─── Search & Highlight ───────────────────────────────────────────────────
 
+    isNodeReallyVisible(el) {
+      if (!el || !el.isConnected) return false;
+      if (this.visibilityCache && this.visibilityCache.has(el)) return this.visibilityCache.get(el);
+
+      const computeVis = (el) => {
+        if (el.hasAttribute('hidden')) return false;
+
+        if (typeof el.checkVisibility === 'function') {
+          if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+        } else {
+          if (el.offsetWidth === 0 && el.offsetHeight === 0 && el.getClientRects().length === 0) return false;
+          const style = window.getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+        }
+
+        let current = el;
+        while (current && current !== document.body && current !== document.documentElement) {
+          if (current.tagName && current.tagName.toLowerCase() === 'details' && !current.open) {
+            if (!el.closest('summary')) return false;
+          }
+
+          const style = window.getComputedStyle(current);
+          const overflow = style.overflow + style.overflowY + style.overflowX;
+          if (overflow.includes('hidden') || overflow.includes('clip')) {
+            const rect = current.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return false;
+          }
+          current = current.parentElement;
+        }
+        return true;
+      };
+
+      const result = computeVis(el);
+      if (this.visibilityCache) this.visibilityCache.set(el, result);
+      return result;
+    }
+
     performSearch(query) {
       this.clearHighlights();
       if (!query) return;
@@ -451,20 +488,25 @@
         return;
       }
 
+      const testRegex = new RegExp(regex.source, regex.flags.replace('g', ''));
+      this.visibilityCache = new WeakMap();
+
       const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: (node) => {
+            if (!testRegex.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+
             const parent = node.parentElement;
             if (!parent) return NodeFilter.FILTER_REJECT;
             const tag = parent.tagName.toLowerCase();
             if (['script', 'style', 'noscript'].includes(tag)) return NodeFilter.FILTER_REJECT;
             if (parent.closest('#better-ctrlf-container')) return NodeFilter.FILTER_REJECT;
-            const style = window.getComputedStyle(parent);
-            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return NodeFilter.FILTER_REJECT;
-            const testRegex = new RegExp(regex.source, regex.flags.replace('g', ''));
-            return testRegex.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+
+            if (!this.isNodeReallyVisible(parent)) return NodeFilter.FILTER_REJECT;
+
+            return NodeFilter.FILTER_ACCEPT;
           }
         }
       );
