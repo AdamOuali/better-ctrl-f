@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="./better-ctrl-f.png" alt="better-ctrl-f Logo" width="250"/>
-</div>
+
 
 ### better-ctrl-f
 
