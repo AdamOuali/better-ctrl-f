@@ -3,11 +3,13 @@
   "name": "better-ctrl-f",
   "version": "1.1",
   "description": "better-ctrl-f is a tool that improves the CTRL+F experience in your browser. Supports regex, case-insensitivity, and whole-word matching.",
+
   "permissions": [
     "activeTab",
     "scripting",
     "storage"
   ],
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -15,11 +17,13 @@
       "css": ["content.css"]
     }
   ],
+
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
@@ -28,5 +32,15 @@
     },
     "default_title": "better-ctrl-f",
     "default_popup": "popup.html"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "better-ctrl-f@adam.dev",
+      "data_collection_permissions": {
+        "required": ["none"],
+        "optional": []
+      }
+    }
   }
 }
