@@ -2,3 +2,4 @@ notes
 *.zip
 *.xpi
 scripts
+**/.DS_Store
