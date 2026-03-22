@@ -60,12 +60,27 @@ window.BCF.Highlighter = {
     
     if (docHeight === 0) docHeight = 1;
 
+    // First: Read all layout positions (Avoid Layout Thrashing)
+    const marksData = [];
     matches.forEach((mark, index) => {
       const rect = mark.getBoundingClientRect();
       const top = rect.top + window.scrollY;
       let percentage = (top / docHeight) * 100;
-      
       percentage = Math.max(0, Math.min(100, percentage));
+      
+      // We round percentage to 1 decimal place to group extremely close marks
+      // This limits the number of rendered DOM elements to ~1000 max.
+      const bucket = Math.round(percentage * 10) / 10;
+      marksData.push({ percentage: bucket, index });
+    });
+
+    // Group by bucket to prevent overwhelming the DOM with thousands of identical divs
+    const renderedBuckets = new Set();
+    const fragment = document.createDocumentFragment();
+
+    marksData.forEach(({ percentage, index }) => {
+      if (renderedBuckets.has(percentage)) return;
+      renderedBuckets.add(percentage);
 
       const scrollMark = document.createElement('div');
       scrollMark.className = 'better-ctrlf-scrollbar-mark';
@@ -73,11 +88,13 @@ window.BCF.Highlighter = {
       
       scrollMark.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (onMarkClick) onMarkClick(index);
+        if (onMarkClick) onMarkClick(index); // Navigates to the first match in this bucket
       });
 
-      elements.scrollbarTrack.appendChild(scrollMark);
+      fragment.appendChild(scrollMark);
     });
+
+    elements.scrollbarTrack.appendChild(fragment);
   },
 
   updateActiveScrollMark(elements, currentIdx) {

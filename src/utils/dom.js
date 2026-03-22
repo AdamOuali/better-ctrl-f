@@ -15,36 +15,62 @@ window.BCF.DOM = {
     const cache = overrideCache || visibilityCache;
     if (cache.has(el)) return cache.get(el);
 
-    const computeVis = (el) => {
-      if (el.hasAttribute('hidden')) return false;
+    if (el.hasAttribute('hidden')) {
+      cache.set(el, false);
+      return false;
+    }
 
-      if (typeof el.checkVisibility === 'function') {
-        if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
-      } else {
-        if (el.offsetWidth === 0 && el.offsetHeight === 0 && el.getClientRects().length === 0) return false;
-        const style = window.getComputedStyle(el);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    if (typeof el.checkVisibility === 'function') {
+      if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) {
+        cache.set(el, false);
+        return false;
+      }
+    } else {
+      if (el.offsetWidth === 0 && el.offsetHeight === 0 && el.getClientRects().length === 0) {
+        cache.set(el, false);
+        return false;
+      }
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        cache.set(el, false);
+        return false;
+      }
+    }
+
+    let current = el;
+    let path = [];
+
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (cache.has(current)) {
+        if (!cache.get(current)) {
+          path.forEach(p => cache.set(p, false));
+          return false;
+        }
+        break;
       }
 
-      let current = el;
-      while (current && current !== document.body && current !== document.documentElement) {
-        if (current.tagName && current.tagName.toLowerCase() === 'details' && !current.open) {
-          if (!el.closest('summary')) return false;
-        }
+      path.push(current);
 
-        const style = window.getComputedStyle(current);
-        const overflow = style.overflow + style.overflowY + style.overflowX;
-        if (overflow.includes('hidden') || overflow.includes('clip')) {
-          const rect = current.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) return false;
+      if (current.tagName && current.tagName.toLowerCase() === 'details' && !current.open) {
+        if (!el.closest('summary')) {
+          path.forEach(p => cache.set(p, false));
+          return false;
         }
-        current = current.parentElement;
       }
-      return true;
-    };
 
-    const result = computeVis(el);
-    cache.set(el, result);
-    return result;
+      const style = window.getComputedStyle(current);
+      const overflow = style.overflow + style.overflowY + style.overflowX;
+      if (overflow.includes('hidden') || overflow.includes('clip')) {
+        const rect = current.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+          path.forEach(p => cache.set(p, false));
+          return false;
+        }
+      }
+      current = current.parentElement;
+    }
+
+    path.forEach(p => cache.set(p, true));
+    return true;
   }
 };
