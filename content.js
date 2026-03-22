@@ -110,10 +110,14 @@
         <div class="better-ctrlf-divider"></div>
         <button class="better-ctrlf-btn" id="better-ctrlf-btn-close" title="Close (Esc)">✕</button>
       `;
+      const track = document.createElement('div');
+      track.id = 'better-ctrlf-scrollbar-track';
+      document.body.appendChild(track);
       document.body.appendChild(container);
 
       this.elements = {
         container,
+        scrollbarTrack: track,
         input: container.querySelector('#better-ctrlf-input'),
         inputWrapper: container.querySelector('#better-ctrlf-input-wrapper'),
         countSpan: container.querySelector('#better-ctrlf-count'),
@@ -254,6 +258,10 @@
       this.searchCount = 0;
       this.currentIdx = 0;
       this.updateCountUI();
+      if (this.elements.scrollbarTrack) {
+        this.elements.scrollbarTrack.innerHTML = '';
+        this.elements.scrollbarTrack.classList.remove('visible');
+      }
     }
 
     downloadMatches(uniqueOnly) {
@@ -568,6 +576,8 @@
       this.searchCount = this.matches.length;
       this.currentIdx = this.searchCount > 0 ? 1 : 0;
 
+      this.updateScrollbarMarks();
+
       if (this.searchCount > 0) this.navigate(0);
       else this.updateCountUI();
     }
@@ -600,9 +610,63 @@
       const active = this.matches[this.currentIdx - 1];
       if (active) {
         active.classList.add('better-ctrlf-active');
-        active.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        if (typeof active.scrollIntoViewIfNeeded === 'function') {
+          active.scrollIntoViewIfNeeded(true);
+        } else {
+          active.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
       }
       this.updateCountUI();
+      this.updateActiveScrollMark();
+    }
+
+    updateActiveScrollMark() {
+      if (!this.elements.scrollbarTrack) return;
+      const marks = Array.from(this.elements.scrollbarTrack.children);
+      marks.forEach(m => m.classList.remove('better-ctrlf-active'));
+      if (this.currentIdx > 0 && marks[this.currentIdx - 1]) {
+        marks[this.currentIdx - 1].classList.add('better-ctrlf-active');
+      }
+    }
+
+    updateScrollbarMarks() {
+      if (!this.elements.scrollbarTrack) return;
+      this.elements.scrollbarTrack.innerHTML = '';
+      if (this.searchCount === 0) {
+        this.elements.scrollbarTrack.classList.remove('visible');
+        return;
+      }
+
+      this.elements.scrollbarTrack.classList.add('visible');
+      
+      let docHeight = Math.max(
+        document.body.scrollHeight, document.documentElement.scrollHeight,
+        document.body.offsetHeight, document.documentElement.offsetHeight,
+        document.body.clientHeight, document.documentElement.clientHeight
+      );
+      
+      // Prevent division by zero if height is somehow 0
+      if (docHeight === 0) docHeight = 1;
+
+      this.matches.forEach((mark, index) => {
+        const rect = mark.getBoundingClientRect();
+        const top = rect.top + window.scrollY;
+        let percentage = (top / docHeight) * 100;
+        
+        percentage = Math.max(0, Math.min(100, percentage));
+
+        const scrollMark = document.createElement('div');
+        scrollMark.className = 'better-ctrlf-scrollbar-mark';
+        scrollMark.style.top = `${percentage}%`;
+        
+        scrollMark.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.currentIdx = index + 1;
+          this.navigate(0);
+        });
+
+        this.elements.scrollbarTrack.appendChild(scrollMark);
+      });
     }
 
     updateCountUI(isError = false) {

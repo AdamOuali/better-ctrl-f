@@ -221,3 +221,46 @@ mark.better-ctrlf-highlight.better-ctrlf-active {
 .better-ctrlf-textarea:focus {
   border-color: var(--better-ctrlf-accent);
 }
+
+/* Scrollbar Marks */
+#better-ctrlf-scrollbar-track {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 14px;
+  height: 100vh;
+  z-index: 2147483646; /* Just below main container */
+  pointer-events: none;
+  display: none;
+}
+
+#better-ctrlf-scrollbar-track.visible {
+  display: block;
+}
+
+.better-ctrlf-scrollbar-mark {
+  position: absolute;
+  right: 0;
+  width: 10px;
+  height: 3px;
+  background-color: var(--better-ctrlf-highlight-bg);
+  border-radius: 2px 0 0 2px;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+  min-height: 2px;
+}
+
+.better-ctrlf-scrollbar-mark:hover {
+  width: 14px;
+}
+
+.better-ctrlf-scrollbar-mark.better-ctrlf-active {
+  background-color: var(--better-ctrlf-active-bg);
+  width: 14px;
+  height: 4px;
+  z-index: 2;
+  box-shadow: 0 0 4px var(--better-ctrlf-active-bg);
+}
